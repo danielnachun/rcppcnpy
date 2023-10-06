@@ -46,14 +46,19 @@ bool hasEnding(std::string const &full, std::string const &ending) {
     }
 }
 
-Rcpp::RObject npyLoad(const std::string & filename, const std::string & type, const bool dotranspose) { 
+Rcpp::RObject npyLoad(const std::string & filename, const std::string & type, const bool dotranspose, const std::string & varname) { 
 
     cnpy::NpyArray arr;
 
     if (hasEnding(filename, ".gz")) {
         arr = cnpy::npy_gzload(filename);
     } else {
-        arr = cnpy::npy_load(filename);
+        if (hasEnding(filename, ".npz") && !varname.empty()) {
+            arr = cnpy::npz_load(filename, varname);
+        }
+        else {
+            arr = cnpy::npy_load(filename);
+        }
     }
 
     std::vector<unsigned int> shape = arr.shape;
@@ -198,7 +203,8 @@ RCPP_MODULE(cnpy){
              &npyLoad,          		// function pointer to helper function defined above
              List::create( Named("filename"),   // function arguments including default value
                            Named("type") = "numeric",
-                           Named("dotranspose") = true),
+                           Named("dotranspose") = true,
+                           Named("varname") = ""),
              "read an npy file into a numeric or integer vector or matrix");
 
     function("npySave",         		// name of the identifier at the R level
